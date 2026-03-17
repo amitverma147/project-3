@@ -344,12 +344,20 @@ export async function getUserById(
 
     const actorId =
       actor.role !== UserRole.ADMIN ? await getActorId(actor.email) : null;
-    const canView =
+    let canView =
       actor.role === UserRole.ADMIN ||
       String(user._id) === actorId ||
       (actor.role === UserRole.MANAGER && String(user.managerId) === actorId) ||
       (actor.role === UserRole.TEAM_LEAD &&
         String(user.teamLeadId) === actorId);
+
+    // Allow a team lead to also view their own manager
+    if (!canView && actor.role === UserRole.TEAM_LEAD && actorId) {
+      const tlDoc = await User.findById(actorId).select("managerId").lean();
+      if (tlDoc?.managerId && String(tlDoc.managerId) === String(user._id)) {
+        canView = true;
+      }
+    }
 
     if (!canView) {
       res.status(403).json({

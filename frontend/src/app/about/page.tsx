@@ -16,7 +16,6 @@ function Row({ label, value }: { label: string; value?: string | null }) {
 
 export default function AboutPage() {
   const { user } = useAuth();
-  console.log("User data in About page:", user);
 
   const displayName = user ? `${user.fname} ${user.lname}`.trim() : "—";
   const initial = displayName.charAt(0).toUpperCase();

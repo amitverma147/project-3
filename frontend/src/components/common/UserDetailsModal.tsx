@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { User } from "@/types/user";
 import { userService } from "@/services/user.service";
+import { useAuth } from "@/context/AuthContext";
 
 interface UserDetailsModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export default function UserDetailsModal({
   onClose,
   user,
 }: UserDetailsModalProps) {
+  const { user: currentUser } = useAuth();
   const [managerInfo, setManagerInfo] = useState<{
     id: string;
     name: string;
@@ -63,9 +65,21 @@ export default function UserDetailsModal({
     if (!isOpen || !user) return;
 
     let active = true;
+    const canResolveRelatedUsers =
+      currentUser?.role === "admin" ||
+      currentUser?.role === "manager" ||
+      currentUser?.role === "team_lead";
+    const currentUserName = currentUser
+      ? `${currentUser.firstName ?? currentUser.fname ?? ""} ${currentUser.lastName ?? currentUser.lname ?? ""}`.trim() ||
+        currentUser.username ||
+        currentUser._id
+      : "";
 
     const resolveName = async (id?: string | null) => {
       if (!id) return "-";
+      if (currentUser?._id && id === currentUser._id) return currentUserName;
+      if (!canResolveRelatedUsers) return id;
+
       try {
         const { data: res } = await userService.getById(id);
         const resolved = res.data;
@@ -102,7 +116,7 @@ export default function UserDetailsModal({
     return () => {
       active = false;
     };
-  }, [isOpen, user]);
+  }, [isOpen, user, currentUser]);
 
   if (!isOpen || !user) return null;
 

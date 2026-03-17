@@ -17,6 +17,13 @@ export default function ProfilePage() {
     const fetchRelatedUsers = async () => {
       if (!currentUser) return;
 
+      // Employees typically cannot read arbitrary user details by id.
+      // Skip related-user fetches to avoid expected 403 noise in browser logs.
+      if (currentUser.role === "employee") {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
 
@@ -28,7 +35,7 @@ export default function ProfilePage() {
             );
             setTeamLead(tlRes.data ?? null);
           } catch {
-            console.error("Failed to fetch team lead");
+            setTeamLead(null);
           }
         }
 
@@ -40,7 +47,7 @@ export default function ProfilePage() {
             );
             setManager(mgrRes.data ?? null);
           } catch {
-            console.error("Failed to fetch manager");
+            setManager(null);
           }
         }
       } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type InputHTMLAttributes } from "react";
 import { CreateUserPayload, User } from "@/types/user";
 import { locationData } from "@/lib/locationData";
 
@@ -46,6 +46,20 @@ const EMPTY: FormData = {
     country: "",
   },
 };
+
+const toLocalDateInputValue = (date: Date): string => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const maxAdultDob = (() => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setFullYear(d.getFullYear() - 18);
+  return toLocalDateInputValue(d);
+})();
 
 export default function AddManagerModal({
   isOpen,
@@ -126,6 +140,25 @@ export default function AddManagerModal({
 
   if (!isOpen) return null;
 
+  const getDobError = (dob: string): string | undefined => {
+    if (!dob) return "Required";
+
+    const selectedDate = new Date(`${dob}T00:00:00`);
+    if (Number.isNaN(selectedDate.getTime())) return "Invalid date";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) return "DOB cannot be in the future";
+
+    const adultCutoff = new Date(today);
+    adultCutoff.setFullYear(adultCutoff.getFullYear() - 18);
+
+    return selectedDate <= adultCutoff
+      ? undefined
+      : "Age must be at least 18 years";
+  };
+
   const validateDynamicField = (
     field: string,
     nextForm: FormData,
@@ -151,7 +184,7 @@ export default function AddManagerModal({
           ? undefined
           : "Enter 10 digit mobile number";
       case "dob":
-        return !isEdit && !nextForm.dob ? "Required" : undefined;
+        return isEdit ? undefined : getDobError(nextForm.dob);
       case "address.houseNumber":
         return !nextForm.address.houseNumber.trim() ? "Required" : undefined;
       case "address.street":
@@ -188,7 +221,9 @@ export default function AddManagerModal({
           ? normalizeEmailInput(value)
           : field === "address.pincode"
             ? value.replace(/\D/g, "").slice(0, 6)
-            : value;
+            : field === "dob" && value > maxAdultDob
+              ? maxAdultDob
+              : value;
 
     let nextForm: FormData;
 
@@ -266,7 +301,10 @@ export default function AddManagerModal({
     if (!isEdit && !form.mobileNumber.trim()) e.mobileNumber = "Required";
     else if (!isEdit && !/^\d{10}$/.test(form.mobileNumber))
       e.mobileNumber = "Enter 10 digit mobile number";
-    if (!isEdit && !form.dob) e.dob = "Required";
+    if (!isEdit) {
+      const dobError = getDobError(form.dob);
+      if (dobError) e.dob = dobError;
+    }
     if (!form.address.houseNumber.trim()) e["address.houseNumber"] = "Required";
     if (!form.address.street.trim()) e["address.street"] = "Required";
     if (!form.address.country.trim()) e["address.country"] = "Required";
@@ -305,6 +343,7 @@ export default function AddManagerModal({
     placeholder: string,
     type = "text",
     disabled = false,
+    inputProps?: Pick<InputHTMLAttributes<HTMLInputElement>, "max" | "min">,
   ) => (
     <div>
       <input
@@ -313,6 +352,7 @@ export default function AddManagerModal({
         onChange={(ev) => setField(field, ev.target.value)}
         placeholder={placeholder}
         disabled={disabled}
+        {...inputProps}
         className={`w-full px-3 py-2 border rounded-md shadow-sm text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black ${
           disabled
             ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
@@ -472,7 +512,10 @@ export default function AddManagerModal({
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Date of Birth
               </label>
-              {inp("dob", form.dob, "", "date", isEdit)}
+              {inp("dob", form.dob, "", "date", isEdit, {
+                max: maxAdultDob,
+                min: "1920-01-01",
+              })}
             </div>
           </div>
 

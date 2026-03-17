@@ -33,7 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${poppins.variable} antialiased`}
+      >
         <AuthProvider>
           {children}
           <Toaster position="top-right" richColors closeButton />
