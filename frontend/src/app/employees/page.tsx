@@ -15,6 +15,7 @@ import {
 } from "@/types/user";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
+import { isUnauthorizedError } from "@/lib/apiError";
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<User[]>([]);
@@ -40,8 +41,10 @@ export default function EmployeesPage() {
       if (res.pagination) {
         setPagination(res.pagination);
       }
-    } catch {
-      toast.error("Failed to load employees");
+    } catch (err) {
+      if (!isUnauthorizedError(err)) {
+        toast.error("Failed to load employees");
+      }
     } finally {
       setLoading(false);
     }

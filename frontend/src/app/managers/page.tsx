@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { isUnauthorizedError } from "@/lib/apiError";
 
 export default function ManagersPage() {
   const { user: currentUser } = useAuth();
@@ -65,8 +66,10 @@ export default function ManagersPage() {
       if (res.pagination) {
         setPagination(res.pagination);
       }
-    } catch {
-      toast.error("Failed to load managers");
+    } catch (err) {
+      if (!isUnauthorizedError(err)) {
+        toast.error("Failed to load managers");
+      }
     } finally {
       setLoading(false);
     }

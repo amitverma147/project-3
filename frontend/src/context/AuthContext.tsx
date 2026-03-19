@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { authService, LoginPayload } from "@/services/auth.service";
 import { User } from "@/types/user";
 
-// ── Types 
+// ── Types
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -19,19 +19,33 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
-// ── Context 
+// ── Context
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AUTH_BOOTSTRAP_KEY = "auth:bootstrap";
 
 // ── Provider
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // 
+  const [loading, setLoading] = useState(true); //
+
   useEffect(() => {
+    // Skip profile bootstrap when user explicitly logged out.
+    if (window.localStorage.getItem(AUTH_BOOTSTRAP_KEY) === "skip") {
+      setLoading(false);
+      return;
+    }
+
     authService
       .me()
-      .then(({ data }) => setUser(data.data))
-      .catch(() => setUser(null))
+      .then(({ data }) => {
+        setUser(data.data);
+        window.localStorage.removeItem(AUTH_BOOTSTRAP_KEY);
+      })
+      .catch(() => {
+        setUser(null);
+        window.localStorage.setItem(AUTH_BOOTSTRAP_KEY, "skip");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,11 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authService.login(data); // sets httpOnly cookie
     const { data: res } = await authService.me(); // fetch full user object
     setUser(res.data);
+    window.localStorage.removeItem(AUTH_BOOTSTRAP_KEY);
   }, []);
 
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
+    window.localStorage.setItem(AUTH_BOOTSTRAP_KEY, "skip");
     router.replace("/login");
   }, [router]);
 

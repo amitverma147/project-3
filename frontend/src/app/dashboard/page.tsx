@@ -9,6 +9,7 @@ import { userService } from "@/services/user.service";
 import { User } from "@/types/user";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { isUnauthorizedError } from "@/lib/apiError";
 
 export default function DashboardPage() {
   const { user: currentUser } = useAuth();
@@ -67,8 +68,10 @@ export default function DashboardPage() {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
         setRecentUsers(sorted.slice(0, 5));
-      } catch {
-        toast.error("Failed to load dashboard data");
+      } catch (err) {
+        if (!isUnauthorizedError(err)) {
+          toast.error("Failed to load dashboard data");
+        }
       } finally {
         setLoading(false);
       }

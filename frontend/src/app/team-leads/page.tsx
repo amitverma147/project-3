@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import { useAuth } from "@/context/AuthContext";
+import { isUnauthorizedError } from "@/lib/apiError";
 
 export default function TeamLeadsPage() {
   const { user: currentUser } = useAuth();
@@ -64,8 +65,10 @@ export default function TeamLeadsPage() {
       if (res.pagination) {
         setPagination(res.pagination);
       }
-    } catch {
-      toast.error("Failed to load team leads");
+    } catch (err) {
+      if (!isUnauthorizedError(err)) {
+        toast.error("Failed to load team leads");
+      }
     } finally {
       setLoading(false);
     }

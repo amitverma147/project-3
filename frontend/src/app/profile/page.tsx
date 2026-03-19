@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { userService } from "@/services/user.service";
 import { User } from "@/types/user";
 import { toast } from "sonner";
+import { isUnauthorizedError } from "@/lib/apiError";
 
 export default function ProfilePage() {
   const { user: currentUser } = useAuth();
@@ -50,8 +51,10 @@ export default function ProfilePage() {
             setManager(null);
           }
         }
-      } catch {
-        toast.error("Failed to load profile data");
+      } catch (err) {
+        if (!isUnauthorizedError(err)) {
+          toast.error("Failed to load profile data");
+        }
       } finally {
         setLoading(false);
       }
