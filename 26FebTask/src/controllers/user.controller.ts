@@ -197,6 +197,24 @@ export async function getAllUsers(
     }
     // ADMIN: no filter — returns all users
 
+    const requestedRole = getQuery(
+      req.query as Record<string, string | string[]>,
+      "role",
+    );
+    if (requestedRole) {
+      const allowedRoles = Object.values(UserRole) as string[];
+      if (!allowedRoles.includes(requestedRole)) {
+        res
+          .status(400)
+          .json({ success: false, message: "Invalid role filter" });
+        return;
+      }
+      filter = {
+        ...filter,
+        role: requestedRole,
+      };
+    }
+
     // Pagination parameters
     const page = parseInt(
       getQuery(req.query as Record<string, string | string[]>, "page") || "1",

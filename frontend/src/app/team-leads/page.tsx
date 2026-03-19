@@ -37,15 +37,15 @@ export default function TeamLeadsPage() {
         userService.getAll({
           page,
           limit: itemsPerPage,
+          role: "team_lead",
         }),
         userService.getAll({
           page: 1,
           limit: currentUser?.role === "admin" ? 5000 : 1000,
         }),
       ]);
-      const filteredTeamLeads = (res.data ?? []).filter(
-        (u) => u.role === "team_lead",
-      );
+
+      const filteredTeamLeads = res.data ?? [];
       setTeamLeads(filteredTeamLeads);
 
       const users = allUsersRes.data ?? [];

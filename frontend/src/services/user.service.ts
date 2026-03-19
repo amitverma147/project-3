@@ -8,12 +8,14 @@ import {
 } from "@/types/user";
 
 export const userService = {
-  getAll: (params?: { page?: number; limit?: number }) => {
+  getAll: (params?: { page?: number; limit?: number; role?: User["role"] }) => {
     const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-    const query = queryParams.toString();
-    return api.get<ApiResponse<User[]>>(`/users${query ? `?${query}` : ""}`);
+    queryParams.append("page", (params?.page || 1).toString());
+    queryParams.append("limit", (params?.limit || 10).toString());
+    if (params?.role) {
+      queryParams.append("role", params.role);
+    }
+    return api.get<ApiResponse<User[]>>(`/users?${queryParams.toString()}`);
   },
 
   getById: (id: string) => api.get<ApiResponse<User>>(`/users/${id}`),
@@ -27,13 +29,10 @@ export const userService = {
   transfer: (id: string, data: TransferEmployeePayload) =>
     api.patch<ApiResponse<User>>(`/users/${id}/transfer`, data),
 
-  getTeamLeadsByManager: (
-    managerId: string,
-    params?: { page?: number; limit?: number },
-  ) => {
+  getTeamLeadsByManager: (managerId: string, params?: { page?: number }) => {
     const queryParams = new URLSearchParams({ managerId });
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    queryParams.append("page", (params?.page || 1).toString());
+    queryParams.append("limit", "10"); // always 10 results per page
     return api.get<ApiResponse<User[]>>(
       `/users/team-leads?${queryParams.toString()}`,
     );

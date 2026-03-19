@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ManagersTable from "@/components/managers/ManagersTable";
+
 import AddManagerModal from "@/components/managers/AddManagerModal";
 import Pagination from "@/components/common/Pagination";
 import UserDetailsModal from "@/components/common/UserDetailsModal";
@@ -30,54 +31,56 @@ export default function ManagersPage() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const itemsPerPage = 10;
 
-  const fetchManagers = async (page: number = 1) => {
-    try {
-      setLoading(true);
-      const [{ data: res }, { data: allUsersRes }] = await Promise.all([
-        userService.getAll({
-          page,
-          limit: itemsPerPage,
-        }),
-        userService.getAll({
-          page: 1,
-          limit: currentUser?.role === "admin" ? 5000 : 1000,
-        }),
-      ]);
+  const fetchManagers = useCallback(
+    async (page: number = 1) => {
+      try {
+        setLoading(true);
+        const [{ data: res }, { data: allUsersRes }] = await Promise.all([
+          userService.getAll({
+            page,
+            limit: itemsPerPage,
+            role: "manager",
+          }),
+          userService.getAll({
+            page: 1,
+            limit: currentUser?.role === "admin" ? 5000 : 1000,
+          }),
+        ]);
 
-      const filteredManagers = (res.data ?? []).filter(
-        (u) => u.role === "manager",
-      );
-      setManagers(filteredManagers);
+        const filteredManagers = res.data ?? [];
+        setManagers(filteredManagers);
 
-      const users = allUsersRes.data ?? [];
-      const counts: Record<string, number> = {};
-      for (const manager of filteredManagers) {
-        counts[manager._id] = 0;
-      }
-
-      for (const u of users) {
-        if (!u.managerId) continue;
-        if (counts[u.managerId] !== undefined) {
-          counts[u.managerId] += 1;
+        const users = allUsersRes.data ?? [];
+        const counts: Record<string, number> = {};
+        for (const manager of filteredManagers) {
+          counts[manager._id] = 0;
         }
-      }
-      setMemberCounts(counts);
 
-      if (res.pagination) {
-        setPagination(res.pagination);
+        for (const u of users) {
+          if (!u.managerId) continue;
+          if (counts[u.managerId] !== undefined) {
+            counts[u.managerId] += 1;
+          }
+        }
+        setMemberCounts(counts);
+
+        if (res.pagination) {
+          setPagination(res.pagination);
+        }
+      } catch (err) {
+        if (!isUnauthorizedError(err)) {
+          toast.error("Failed to load managers");
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      if (!isUnauthorizedError(err)) {
-        toast.error("Failed to load managers");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [currentUser?.role],
+  );
 
   useEffect(() => {
     fetchManagers(currentPage);
-  }, [currentPage, currentUser?.role]);
+  }, [currentPage, fetchManagers]);
 
   const handleAddManager = async (data: Omit<CreateUserPayload, "role">) => {
     try {
