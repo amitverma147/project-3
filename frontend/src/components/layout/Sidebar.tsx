@@ -10,7 +10,9 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   const navItems = user ? getNavigationItems(user.role) : [];
-
+  const roleLabel = user?.role
+    ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`
+    : "User";
 
   const displayName = user
     ? `${user.fname} ${user.lname}`.trim() || user.username || "User"
@@ -21,7 +23,7 @@ export default function Sidebar() {
     <div className="w-64 bg-white border-r border-gray-200 h-screen hidden md:flex flex-col fixed left-0 top-0">
       <div className="h-16 flex items-center px-6 border-b border-gray-200">
         <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
-          {user?.role.charAt(0).toUpperCase() + user?.role.slice(1)} Portal
+          {roleLabel} Portal
         </h1>
       </div>
 

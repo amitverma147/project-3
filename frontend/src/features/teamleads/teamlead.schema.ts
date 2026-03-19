@@ -24,7 +24,7 @@ export const getDobError = (dob: string): string | undefined => {
   return undefined;
 };
 
-const employeeCoreSchema = z.object({
+const teamLeadCoreSchema = z.object({
   firstName: z
     .string()
     .trim()
@@ -47,7 +47,7 @@ const employeeCoreSchema = z.object({
     .regex(MOBILE_PATTERN, "Enter 10 digit mobile number"),
   username: z.string().trim(),
   password: z.string(),
-  teamLeadId: z.string(),
+  managerId: z.string(),
   dob: z.string().superRefine((value, ctx) => {
     const error = getDobError(value);
     if (error) {
@@ -67,14 +67,14 @@ const employeeCoreSchema = z.object({
   }),
 });
 
-export const buildEmployeeSchema = (params?: {
+export const buildTeamLeadSchema = (params?: {
   isEdit?: boolean;
-  isTeamLeadRole?: boolean;
+  isManagerRole?: boolean;
 }) => {
   const isEdit = params?.isEdit ?? false;
-  const isTeamLeadRole = params?.isTeamLeadRole ?? false;
+  const isManagerRole = params?.isManagerRole ?? false;
 
-  return employeeCoreSchema.superRefine((value, ctx) => {
+  return teamLeadCoreSchema.superRefine((value, ctx) => {
     if (!isEdit && (!value.password || value.password.trim().length < 6)) {
       ctx.addIssue({
         code: "custom",
@@ -83,16 +83,16 @@ export const buildEmployeeSchema = (params?: {
       });
     }
 
-    if (!isTeamLeadRole && !value.teamLeadId?.trim()) {
+    if (!isManagerRole && !value.managerId?.trim()) {
       ctx.addIssue({
         code: "custom",
-        path: ["teamLeadId"],
-        message: "Select a team lead",
+        path: ["managerId"],
+        message: "Select a manager",
       });
     }
   });
 };
 
-export const employeeSchema = buildEmployeeSchema();
+export const teamLeadSchema = buildTeamLeadSchema();
 
-export type EmployeeFormValues = z.infer<typeof employeeCoreSchema>;
+export type TeamLeadFormValues = z.infer<typeof teamLeadCoreSchema>;
